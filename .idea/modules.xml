@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../PCB/.idea/PCB.iml" filepath="$PROJECT_DIR$/../PCB/.idea/PCB.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Tricks/.idea/Tricks.iml" filepath="$PROJECT_DIR$/../Tricks/.idea/Tricks.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Tricks Rebuild.iml" filepath="$PROJECT_DIR$/.idea/Tricks Rebuild.iml" />
+    </modules>
+  </component>
+</project>
