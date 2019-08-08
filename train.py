@@ -1,14 +1,12 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader,Subset
 from torch.nn import CrossEntropyLoss,TripletMarginLoss
 from torch.optim import Adam
 from torch.optim import lr_scheduler
 from Model import Train_Model
-from RandomErasing import RandomErasing
 from cross_entropy_smooth import CrossEntropySmooth
 import os
 import numpy as np
@@ -39,43 +37,6 @@ def Classes_Num(root):
     for i,sub_dir in enumerate(dirs):
         class_num[i] = len(os.listdir(root+sub_dir))
     return class_num
-
-#Get 16 Classes and 4 pics each
-
-def RandomPic(classes_num,dataset,B = 16, P = 4):
-    num_of_class = len(classes_num)
-    choice = np.random.choice(range(0,num_of_class),B)
-    IMG = []
-    LABELS = []
-    for i in range(0,B):
-        person_id = choice[i]
-        pics_num = classes_num[person_id].item()
-        start_index = classes_num[0:person_id].sum()
-        end_index = start_index + pics_num
-        subset = Subset(dataset,range(int(start_index.item()),int(end_index.item())))
-        subloader = DataLoader(subset,P,True)
-        if pics_num >= P:
-            img,labels = next(iter(subloader))
-        elif pics_num < P:
-            img,labels = next(iter(subloader))
-            randchoice = np.random.choice(range(0,int(pics_num)),P-int(pics_num),True)
-            for randint in randchoice:
-                subimg,sublabel = img[randint],labels[randint]
-                img = torch.cat((img,torch.unsqueeze(subimg,dim = 0)),dim = 0)
-                labels =  torch.cat((labels,torch.unsqueeze(sublabel,dim = 0)),dim = 0)
-        IMG.append(img)
-        LABELS.append(labels)
-    Inputs = IMG[0]
-    Labels = LABELS[0]
-    for i in range(1,len(IMG)):
-        Inputs = torch.cat((Inputs,IMG[i]))
-        Labels = torch.cat((Labels,LABELS[i]))
-    sli = np.arange(0,64)
-    np.random.shuffle(sli)
-    index_ = torch.tensor(sli,dtype = torch.long)
-    Inputs = torch.index_select(Inputs,0,index_)
-    Labels = torch.index_select(Labels,0,index_)
-    return Inputs,Labels,sli
 
 #Select Hard-Triplets
 def Select_Triplet(embdings,index,B = 16,P = 4):
@@ -111,21 +72,9 @@ def Select_Triplet(embdings,index,B = 16,P = 4):
     return triplets
 
 
-#Random Erasing Augmentation
-REA = RandomErasing()
 
-train_transform_list = [transforms.Resize((256,128)),
-                        transforms.Pad(10),
-                        transforms.RandomCrop((256,128)),
-                        transforms.RandomHorizontalFlip(0.5),
-                        transforms.ToTensor(),
-                        transforms.Normalize([0.485,0.224,0.225],[0.229,0.224,0.225]),
-                        REA]
-val_tansform_list = [transforms.Resize((256,128)),
-                     transforms.ToTensor(),
-                     transforms.Normalize([0.485,0.224,0.225],[0.229,0.224,0.225])]
-train_transform = transforms.Compose(train_transform_list)
-val_transorm = transforms.Compose(val_tansform_list)
+
+
 
 
 #dataset&loader
