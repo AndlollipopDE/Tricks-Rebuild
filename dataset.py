@@ -2,7 +2,7 @@ from torch.utils.data import Dataset,Sampler
 from PIL import Image
 from collections import defaultdict
 import copy
-import numpy
+import numpy as np
 import random
 
 class ImageDataset(Dataset):
@@ -23,45 +23,47 @@ class ImageDataset(Dataset):
         return img,personid
 
 class RandomIdentitySampler(Sampler):
-    def __init__(self,data_source,batch_size,num_instance):
+    def __init__(self, data_source, batch_size, num_instances):
         self.data_source = data_source
         self.batch_size = batch_size
-        self.num_instance = num_instance
-        self.num_personid = self.batch_size // self.num_instance
-        self.index_dict = defaultdict(list)
-        for index,filename in enumerate(self.data_source):
-            personid = filename[1]
-            self.index_dict[personid].append(index)
-        self.personids = list(self.index_dict.keys())
+        self.num_instances = num_instances
+        self.num_pids_per_batch = self.batch_size // self.num_instances
+        self.index_dic = defaultdict(list)
+        for index, (_, pid) in enumerate(self.data_source):
+            self.index_dic[pid].append(index)
+        self.pids = list(self.index_dic.keys())
         self.length = 0
-        for personid in self.personids:
-            idx = self.index_dict[personid]
-            num = len(idx)
-            if num < self.num_instance:
-                num = self.num_instance
-            self.length += num - num % self.num_instance
+        for pid in self.pids:
+            idxs = self.index_dic[pid]
+            num = len(idxs)
+            if num < self.num_instances:
+                num = self.num_instances
+            self.length += num - num % self.num_instances
+
     def __iter__(self):
-        batch_index_dict = defaultdict(list)
-        for personid in self.personids:
-            indexs = copy.deepcopy(self.index_dict[personid])
-            if len(indexs) < self.num_instance:
-                indexs = numpy.random.choice(indexs,size = self.num_instance,replace = True)
-            batch_index = []
-            for index in indexs:
-                batch_index.append(index)
-                if len(batch_index) == self.num_instance:
-                    batch_index_dict[personid].append(batch_index)
-                    batch_index = []
-        personids = copy.deepcopy(self.personids)
-        final_indexs = []
-        while len(personids) > self.num_personid:
-            id_choices = random.sample(personids,self.num_personid)
-            for ids in id_choices:
-                person_id = batch_index_dict[ids].pop(0)
-                if len(batch_index_dict[ids]) == 0:
-                    personids.remove(ids)
-                final_indexs.extend(person_id)
-        self.length = len(final_indexs)
-        return iter(final_indexs)
+        batch_idxs_dict = defaultdict(list)
+        for pid in self.pids:
+            idxs = copy.deepcopy(self.index_dic[pid])
+            if len(idxs) < self.num_instances:
+                idxs = np.random.choice(idxs, size=self.num_instances, replace=True)
+            random.shuffle(idxs)
+            batch_idxs = []
+            for idx in idxs:
+                batch_idxs.append(idx)
+                if len(batch_idxs) == self.num_instances:
+                    batch_idxs_dict[pid].append(batch_idxs)
+                    batch_idxs = []
+        avai_pids = copy.deepcopy(self.pids)
+        final_idxs = []
+        while len(avai_pids) >= self.num_pids_per_batch:
+            selected_pids = random.sample(avai_pids, self.num_pids_per_batch)
+            for pid in selected_pids:
+                batch_idxs = batch_idxs_dict[pid].pop(0)
+                final_idxs.extend(batch_idxs)
+                if len(batch_idxs_dict[pid]) == 0:
+                    avai_pids.remove(pid)
+        self.length = len(final_idxs)
+        return iter(final_idxs)
+
     def __len__(self):
         return self.length

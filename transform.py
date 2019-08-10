@@ -3,11 +3,11 @@ from randomerasing import RandomErasing
 
 def Train_Transform(RandomER = False):
     train_transform_list = [transforms.Resize((256,128)),
+                    transforms.RandomHorizontalFlip(0.5),
                     transforms.Pad(10),
                     transforms.RandomCrop((256,128)),
-                    transforms.RandomHorizontalFlip(0.5),
                     transforms.ToTensor(),
-                    transforms.Normalize([0.485,0.224,0.225],[0.229,0.224,0.225])]
+                    transforms.Normalize([0.485, 0.456, 0.406],[0.229,0.224,0.225])]
     if RandomER:
         REA = RandomErasing()
         train_transform_list.append(REA)

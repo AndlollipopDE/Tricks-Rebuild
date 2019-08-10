@@ -1,41 +1,28 @@
 import torch
-from torch.nn import TripletMarginLoss
+from torch import nn
 
-def Distance(x, y):
-    m, n = x.size(0), y.size(0)
-    xx = torch.pow(x, 2).sum(1, keepdim=True).expand(m, n)
-    yy = torch.pow(y, 2).sum(1, keepdim=True).expand(n, m).t()
-    dist = xx + yy
-    dist.addmm_(1, -2, x, y.t())
-    dist = dist.clamp(min=1e-12).sqrt()  # for numerical stability
-    return dist
+class TripletLoss(nn.Module):
+    def __init__(self, margin=0.3, mutual_flag = False):
+        super(TripletLoss, self).__init__()
+        self.margin = margin
+        self.ranking_loss = nn.MarginRankingLoss(margin=margin)
+        self.mutual = mutual_flag
 
-def Hard_triplet(embdings,num_instance):
-    dist_map = Distance(embdings,embdings)
-    N = embdings.size(0)
-    num_person = N // num_instance
-    triplets = []
-    for i in range(num_person):
-        start = i * num_instance
-        for j in range(num_instance):
-            start_ = start + j
-            person_dist = dist_map[start_]
-            max_idx = torch.max(person_dist.detach()[start:start+num_instance],dim = 0)[1].item() + start
-            tmp_dist = person_dist.detach()
-            tmp_dist[start:start+num_instance] = 99999
-            min_idx = torch.min(tmp_dist,dim = 0)[1].item()
-            triplets.append([start_,max_idx,min_idx])
-    return triplets
-
-def TripletLoss(embdings,margins,num_instance):
-    triplets = Hard_triplet(embdings.detach(),num_instance)
-    loss = 0.0
-    tripletloss = TripletMarginLoss(margin=margins)
-    for triplet in triplets:
-        a = triplet[0]
-        p = triplet[1]
-        n = triplet[2]
-        loss += tripletloss(torch.unsqueeze(embdings[a]),torch.unsqueeze(embdings[p]),torch.unsqueeze(embdings[n]))
-    return loss
-
-
+    def forward(self, inputs, targets):
+        n = inputs.size(0)
+        dist = torch.pow(inputs, 2).sum(dim=1, keepdim=True).expand(n, n)
+        dist = dist + dist.t()
+        dist.addmm_(1, -2, inputs, inputs.t())
+        dist = dist.clamp(min=1e-12).sqrt()
+        mask = targets.expand(n, n).eq(targets.expand(n, n).t())
+        dist_ap, dist_an = [], []
+        for i in range(n):
+            dist_ap.append(dist[i][mask[i]].max().unsqueeze(0))
+            dist_an.append(dist[i][mask[i] == 0].min().unsqueeze(0))
+        dist_ap = torch.cat(dist_ap)
+        dist_an = torch.cat(dist_an)
+        y = torch.ones_like(dist_an)
+        loss = self.ranking_loss(dist_an, dist_ap, y)
+        if self.mutual:
+            return loss, dist
+        return loss

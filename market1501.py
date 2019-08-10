@@ -27,8 +27,8 @@ class Market1501():
         for imgpath in imgdex:
             num_personid.append(imgpath[1])
             num_img.append(imgpath[0])
-        num_personid = set(num_personid)
-        num_img = set(num_img)
+        num_personid = len(set(num_personid))
+        num_img = len(set(num_img))
         return num_personid,num_img
     def __init__(self,root):
         super(Market1501,self).__init__()
@@ -37,8 +37,8 @@ class Market1501():
         self.test_dir = self.root + 'bounding_box_test/'
         self.query_dir = self.root + 'query/'
         train = self.process(self.train_dir,True)
-        test = self.process(self.test_dir)
-        query = self.process(self.query_dir)
+        test = self.process(self.test_dir,True)
+        query = self.process(self.query_dir,True)
         self.train = train
         self.test = test
         self.query = query

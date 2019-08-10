@@ -6,14 +6,10 @@ def WarmUp_Scheduler(epoch):
         return epoch
     elif epoch <= 40 and epoch > 10:
         return 10
-    elif epoch == 41:
+    elif epoch > 40 and epoch <= 70:
+        return 1
+    elif epoch > 70:
         return 0.1
-    elif epoch > 41 and epoch <= 70:
-        return 0.1
-    elif epoch == 71:
-        return 0.01
-    elif epoch > 71:
-        return 0.01
 
 def Make_Optimizer(model,learning_rate):
     params = []
