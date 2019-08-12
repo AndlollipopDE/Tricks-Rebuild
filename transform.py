@@ -2,10 +2,10 @@ import torchvision.transforms as transforms
 from randomerasing import RandomErasing
 
 def Train_Transform(RandomER = False):
-    train_transform_list = [transforms.Resize((256,128)),
+    train_transform_list = [transforms.Resize((384,128)),
                     transforms.RandomHorizontalFlip(0.5),
                     transforms.Pad(10),
-                    transforms.RandomCrop((256,128)),
+                    transforms.RandomCrop((384,128)),
                     transforms.ToTensor(),
                     transforms.Normalize([0.485, 0.456, 0.406],[0.229,0.224,0.225])]
     if RandomER:
@@ -16,7 +16,7 @@ def Train_Transform(RandomER = False):
 
 
 def Val_Transform():
-    val_tansform_list = [transforms.Resize((256,128)),
+    val_tansform_list = [transforms.Resize((384,128)),
                      transforms.ToTensor(),
                      transforms.Normalize([0.485, 0.456, 0.406],[0.229,0.224,0.225])]
     val_transorm = transforms.Compose(val_tansform_list)

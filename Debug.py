@@ -48,10 +48,22 @@ for epoch in range(EPOCH):
                 Data = Data.to(device)
                 Label = Label.to(device)
                 ft, fi, out = Model(Data)
-                _, preds = torch.max(out,1)
+
+                parts = []
+                for i in range(6):
+                    parts.append(out[i])
+                score = parts[0] + parts[1] + parts[2] + parts[3] + parts[4] + parts[5]
+                _, preds = torch.max(score,1)
+
+                #_, preds = torch.max(out,1)
                 corrects = torch.sum(preds == Label)
                 running_corrects += float(corrects)
-                idloss = IDloss(out, Label)
+                #idloss = IDloss(out, Label)
+
+                idloss = IDloss(parts[0],Label)
+                for i in range(1,6):
+                    idloss += IDloss(parts[i],Label)
+                
                 triloss = TripletLoss(ft, 0.3, 4)
                 loss = idloss+triloss
                 running_loss += loss
